@@ -3,30 +3,43 @@ name: Vue.js Frontend CI
 on: [push, pull_request]
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
+    
     steps:
     - uses: actions/checkout@v4
     
-    # Build Vue.js
-    - name: Build frontend
+    - name: Verify files
       run: |
-        cd finch-frontend
-        npm install
-        npm run build
-
-    # Docker build/push
+        ls package.json || (echo "Error: package.json not found!" && exit 1)
+        
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        
+    - name: Install dependencies
+      run: npm install
+        
+    - name: Run lint
+      run: npm run lint
+        
+    - name: Build project
+      run: npm run build
+        
+    # Optional: Docker build/push
     - name: Login to Docker Hub
+      if: github.event_name != 'pull_request'
       uses: docker/login-action@v3
       with:
         username: ${{ secrets.DOCKER_HUB_USERNAME }}
         password: ${{ secrets.DOCKER_HUB_TOKEN }}
-    
-    - name: Build and push frontend image
+        
+    - name: Build and push Docker image
+      if: github.event_name != 'pull_request'
       uses: docker/build-push-action@v5
       with:
-        context: ./frontend
-        push: ${{ github.event_name != 'pull_request' }}
+        push: true
         tags: |
           ${{ secrets.DOCKER_HUB_USERNAME }}/finch-frontend:latest
           ${{ secrets.DOCKER_HUB_USERNAME }}/finch-frontend:${{ github.sha }}
