@@ -11,7 +11,7 @@ jobs:
     # Build Vue.js
     - name: Build frontend
       run: |
-        cd frontend
+        cd finch-frontend
         npm install
         npm run build
 
